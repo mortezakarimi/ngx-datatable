@@ -1,6 +1,12 @@
-import { Component } from '@angular/core';
-import { ColumnMode, TableColumn } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  ContextMenuEvent,
+  DatatableComponent,
+  TableColumn
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'contextmenu-demo',
@@ -50,7 +56,7 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent]
 })
 export class ContextMenuDemoComponent {
   rows: Employee[] = [];
@@ -63,13 +69,15 @@ export class ContextMenuDemoComponent {
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data;
     });
   }
 
-  onTableContextMenu(contextMenuEvent) {
+  onTableContextMenu(contextMenuEvent: ContextMenuEvent<Employee>) {
     console.log(contextMenuEvent);
 
     this.rawEvent = contextMenuEvent.event;
@@ -83,16 +91,5 @@ export class ContextMenuDemoComponent {
 
     contextMenuEvent.event.preventDefault();
     contextMenuEvent.event.stopPropagation();
-  }
-
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
   }
 }

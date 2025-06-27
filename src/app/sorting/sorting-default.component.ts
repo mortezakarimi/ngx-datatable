@@ -1,6 +1,12 @@
-import { Component, OnInit } from '@angular/core';
-import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject, OnInit } from '@angular/core';
+import {
+  ColumnMode,
+  DataTableColumnCellDirective,
+  DataTableColumnDirective,
+  DatatableComponent
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'default-sorting-demo',
@@ -44,28 +50,18 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent, DataTableColumnDirective, DataTableColumnCellDirective]
 })
 export class DefaultSortingComponent implements OnInit {
   rows: Employee[] = [];
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   ngOnInit() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data;
     });
-  }
-
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      const data = JSON.parse(req.response);
-      cb(data);
-    };
-
-    req.send();
   }
 }

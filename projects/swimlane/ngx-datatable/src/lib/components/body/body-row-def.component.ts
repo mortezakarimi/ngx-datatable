@@ -10,6 +10,7 @@ import {
   ViewContainerRef
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { RowOrGroup } from '../../types/public.types';
 
 /**
  * This component is passed as ng-template and rendered by BodyComponent.
@@ -21,18 +22,21 @@ import { NgTemplateOutlet } from '@angular/common';
   template: `@if (rowDef.rowDefInternal.rowTemplate) {
     <ng-container
       [ngTemplateOutlet]="rowDef.rowDefInternal.rowTemplate"
-      [ngTemplateOutletContext]="rowDef"
+      [ngTemplateOutletContext]="rowContext"
     />
   }`,
   imports: [NgTemplateOutlet]
 })
 export class DatatableRowDefComponent {
   rowDef = inject(RowDefToken);
+  rowContext = {
+    ...this.rowDef.rowDefInternal,
+    disabled: this.rowDef.rowDefInternalDisabled
+  };
 }
 
 @Directive({
-  selector: '[rowDef]',
-  standalone: true
+  selector: '[rowDef]'
 })
 export class DatatableRowDefDirective {
   static ngTemplateContextGuard(
@@ -47,13 +51,13 @@ export class DatatableRowDefDirective {
  * @internal To be used internally by ngx-datatable.
  */
 @Directive({
-  selector: '[rowDefInternal]',
-  standalone: true
+  selector: '[rowDefInternal]'
 })
 export class DatatableRowDefInternalDirective implements OnInit {
   vc = inject(ViewContainerRef);
 
-  @Input() rowDefInternal?: RowDefContext;
+  @Input() rowDefInternal!: RowDefContext;
+  @Input() rowDefInternalDisabled?: boolean;
 
   ngOnInit(): void {
     this.vc.createEmbeddedView(
@@ -78,6 +82,6 @@ const RowDefToken = new InjectionToken<DatatableRowDefInternalDirective>('RowDef
 type RowDefContext = {
   template: TemplateRef<unknown>;
   rowTemplate: TemplateRef<unknown>;
-  row: any;
+  row: RowOrGroup<unknown>;
   index: number;
 };

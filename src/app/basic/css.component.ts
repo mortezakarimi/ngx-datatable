@@ -1,6 +1,12 @@
-import { Component } from '@angular/core';
-import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DataTableColumnDirective,
+  DatatableComponent,
+  TableColumn
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { FullEmployee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'row-css-demo',
@@ -36,7 +42,7 @@ import { FullEmployee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent, DataTableColumnDirective]
 })
 export class RowCssComponent {
   rows: FullEmployee[] = [];
@@ -44,33 +50,23 @@ export class RowCssComponent {
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
-      this.rows = data;
+    this.dataService.load('100k.json').subscribe(data => {
+      this.rows = data.splice(0, 50);
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/100k.json`);
-
-    req.onload = () => {
-      const rows = JSON.parse(req.response);
-      cb(rows.splice(0, 50));
-    };
-
-    req.send();
-  }
-
-  getRowClass(row) {
+  getRowClass(row: FullEmployee) {
     return {
       'age-is-ten': row.age % 10 === 0
     };
   }
 
-  getCellClass({ row, column, value }): any {
+  getCellClass: TableColumn['cellClass'] = ({ row, column, value }) => {
     return {
       'is-female': value === 'female'
     };
-  }
+  };
 }

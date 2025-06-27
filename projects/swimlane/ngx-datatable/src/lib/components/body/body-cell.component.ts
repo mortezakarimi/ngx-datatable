@@ -9,38 +9,32 @@ import {
   HostListener,
   inject,
   Input,
-  OnDestroy,
-  Output,
-  PipeTransform,
-  ViewChild,
-  ViewContainerRef
+  Output
 } from '@angular/core';
 
-import { TableColumn } from '../../types/table-column.type';
 import { Keys } from '../../utils/keys';
-import { BehaviorSubject } from 'rxjs';
 import {
   ActivateEvent,
   CellContext,
+  Row,
   RowOrGroup,
   SortDirection,
   SortPropDir,
   TreeStatus
 } from '../../types/public.types';
-import { DataTableGhostLoaderComponent } from './ghost-loader/ghost-loader.component';
-import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
+import { CellActiveEvent, RowIndex, TableColumnInternal } from '../../types/internal.types';
 
 @Component({
   selector: 'datatable-body-cell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (row) {
     <div class="datatable-body-cell-label" [style.margin-left.px]="calcLeftMargin(column, row)">
       @if (column.checkboxable && (!displayCheck || displayCheck(row, column, value))) {
       <label class="datatable-checkbox">
         <input
           type="checkbox"
-          [disabled]="disable$ | async"
+          [disabled]="disabled"
           [checked]="isSelected"
           (click)="onCheckboxChange($event)"
         />
@@ -73,37 +67,29 @@ import { AsyncPipe, NgTemplateOutlet } from '@angular/common';
       } @else {
       <span [title]="sanitizedValue">{{ value }}</span>
       } } @else {
-      <ng-template
-        #cellTemplate
-        [ngTemplateOutlet]="column.cellTemplate"
-        [ngTemplateOutletContext]="cellContext"
-      >
+      <ng-template [ngTemplateOutlet]="column.cellTemplate" [ngTemplateOutletContext]="cellContext">
       </ng-template>
       }
     </div>
-    } @else { @if (ghostLoadingIndicator) {
-    <ghost-loader [columns]="[column]" [pageSize]="1"></ghost-loader>
-    } }
   `,
-  imports: [NgTemplateOutlet, DataTableGhostLoaderComponent, AsyncPipe]
+  styleUrl: './body-cell.component.scss',
+  imports: [NgTemplateOutlet]
 })
-export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
-  implements DoCheck, OnDestroy
-{
+export class DataTableBodyCellComponent<TRow extends Row = any> implements DoCheck {
   private cd = inject(ChangeDetectorRef);
 
-  @Input() displayCheck: (row: RowOrGroup<TRow>, column: TableColumn, value: any) => boolean;
+  @Input() displayCheck?: (row: TRow, column: TableColumnInternal, value: any) => boolean;
 
-  _disable$: BehaviorSubject<boolean>;
-  @Input() set disable$(val: BehaviorSubject<boolean>) {
-    this._disable$ = val;
-    this.cellContext.disable$ = val;
-  }
-  get disable$() {
-    return this._disable$;
+  @Input() set disabled(value: boolean | undefined) {
+    this.cellContext.disabled = value;
+    this._disabled = value;
   }
 
-  @Input() set group(group: TRow[]) {
+  get disabled(): boolean | undefined {
+    return this._disabled;
+  }
+
+  @Input() set group(group: TRow[] | undefined) {
     this._group = group;
     this.cellContext.group = group;
     this.checkValueUpdates();
@@ -125,45 +111,46 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     return this._rowHeight;
   }
 
-  @Input() set isSelected(val: boolean) {
+  @Input() set isSelected(val: boolean | undefined) {
     this._isSelected = val;
     this.cellContext.isSelected = val;
     this.cd.markForCheck();
   }
 
-  get isSelected(): boolean {
+  get isSelected(): boolean | undefined {
     return this._isSelected;
   }
 
-  @Input() set expanded(val: boolean) {
+  @Input() set expanded(val: boolean | undefined) {
     this._expanded = val;
     this.cellContext.expanded = val;
     this.cd.markForCheck();
   }
 
-  get expanded(): boolean {
+  get expanded(): boolean | undefined {
     return this._expanded;
   }
 
-  @Input() set rowIndex(val: number) {
+  @Input() set rowIndex(val: RowIndex) {
     this._rowIndex = val;
-    this.cellContext.rowIndex = val;
+    this.cellContext.rowIndex = val?.index;
+    this.cellContext.rowInGroupIndex = val?.indexInGroup;
     this.checkValueUpdates();
     this.cd.markForCheck();
   }
 
-  get rowIndex(): number {
+  get rowIndex(): RowIndex {
     return this._rowIndex;
   }
 
-  @Input() set column(column: TableColumn) {
+  @Input() set column(column: TableColumnInternal) {
     this._column = column;
     this.cellContext.column = column;
     this.checkValueUpdates();
     this.cd.markForCheck();
   }
 
-  get column(): TableColumn {
+  get column(): TableColumnInternal {
     return this._column;
   }
 
@@ -187,7 +174,7 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     return this._sorts;
   }
 
-  @Input() set treeStatus(status: TreeStatus) {
+  @Input() set treeStatus(status: TreeStatus | undefined) {
     if (
       status !== 'collapsed' &&
       status !== 'expanded' &&
@@ -203,21 +190,13 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     this.cd.markForCheck();
   }
 
-  get treeStatus(): TreeStatus {
+  get treeStatus(): TreeStatus | undefined {
     return this._treeStatus;
   }
 
-  @Input() ghostLoadingIndicator = false;
-
-  @Output() activate: EventEmitter<ActivateEvent<TRow>> = new EventEmitter();
+  @Output() activate = new EventEmitter<CellActiveEvent<TRow>>();
 
   @Output() treeAction: EventEmitter<any> = new EventEmitter();
-
-  @ViewChild('cellTemplate', { read: ViewContainerRef, static: true })
-  cellTemplate: ViewContainerRef;
-
-  @ViewChild('ghostLoaderTemplate', { read: ViewContainerRef, static: true })
-  ghostLoaderTemplate: ViewContainerRef;
 
   @HostBinding('class')
   get columnCssClasses(): string {
@@ -249,7 +228,7 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     if (!this.sortDir) {
       cls += ' sort-active';
     }
-    if (this.isFocused && !this.disable$?.value) {
+    if (this.isFocused && !this._disabled) {
       cls += ' active';
     }
     if (this.sortDir === SortDirection.asc) {
@@ -258,7 +237,7 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     if (this.sortDir === SortDirection.desc) {
       cls += ' sort-desc';
     }
-    if (this.disable$?.value) {
+    if (this._disabled) {
       cls += ' row-disabled';
     }
 
@@ -271,12 +250,12 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
   }
 
   @HostBinding('style.minWidth.px')
-  get minWidth(): number {
+  get minWidth(): number | undefined {
     return this.column.minWidth;
   }
 
   @HostBinding('style.maxWidth.px')
-  get maxWidth(): number {
+  get maxWidth(): number | undefined {
     return this.column.maxWidth;
   }
 
@@ -289,27 +268,28 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     return height + 'px';
   }
 
-  sanitizedValue: string;
+  sanitizedValue!: string;
   value: any;
-  sortDir: SortDirection;
+  sortDir?: SortDirection;
   isFocused = false;
 
   cellContext: CellContext<TRow>;
 
-  private _isSelected: boolean;
-  private _sorts: SortPropDir[];
-  private _column: TableColumn;
-  private _row: TRow;
-  private _group: TRow[];
-  private _rowHeight: number;
-  private _rowIndex: number;
-  private _expanded: boolean;
+  private _isSelected?: boolean;
+  private _sorts!: SortPropDir[];
+  private _column!: TableColumnInternal;
+  private _row!: TRow;
+  private _group?: TRow[];
+  private _rowHeight!: number;
+  private _rowIndex!: RowIndex;
+  private _expanded?: boolean;
   private _element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  private _treeStatus: TreeStatus;
+  private _treeStatus?: TreeStatus;
+  private _disabled?: boolean;
 
   constructor() {
     this.cellContext = {
-      onCheckboxChangeFn: (event: MouseEvent | KeyboardEvent) => this.onCheckboxChange(event),
+      onCheckboxChangeFn: (event: Event) => this.onCheckboxChange(event),
       activateFn: (event: ActivateEvent<TRow>) => this.activate.emit(event),
       row: this.row,
       group: this.group,
@@ -317,9 +297,10 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
       column: this.column,
       rowHeight: this.rowHeight,
       isSelected: this.isSelected,
-      rowIndex: this.rowIndex,
+      rowIndex: this.rowIndex?.index,
+      rowInGroupIndex: this.rowIndex?.indexInGroup,
       treeStatus: this.treeStatus,
-      disable$: this.disable$,
+      disabled: this._disabled,
       onTreeAction: () => this.onTreeAction()
     };
   }
@@ -328,23 +309,14 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     this.checkValueUpdates();
   }
 
-  ngOnDestroy(): void {
-    if (this.cellTemplate) {
-      this.cellTemplate.clear();
-    }
-    if (this.ghostLoaderTemplate) {
-      this.ghostLoaderTemplate.clear();
-    }
-  }
-
   checkValueUpdates(): void {
     let value = '';
 
-    if (!this.row || !this.column) {
+    if (!this.row || !this.column || this.column.prop == undefined) {
       value = '';
     } else {
       const val = this.column.$$valueGetter(this.row, this.column.prop);
-      const userPipe: PipeTransform = this.column.pipe;
+      const userPipe = this.column.pipe;
 
       if (userPipe) {
         value = userPipe.transform(val);
@@ -356,7 +328,7 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     if (this.value !== value) {
       this.value = value;
       this.cellContext.value = value;
-      this.cellContext.disable$ = this.disable$;
+      this.cellContext.disabled = this._disabled;
       this.sanitizedValue = value !== null && value !== undefined ? this.stripHtml(value) : value;
       this.cd.markForCheck();
     }
@@ -429,7 +401,7 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     }
   }
 
-  onCheckboxChange(event: MouseEvent | KeyboardEvent): void {
+  onCheckboxChange(event: Event): void {
     this.activate.emit({
       type: 'checkbox',
       event,
@@ -443,16 +415,14 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     });
   }
 
-  calcSortDir(sorts: SortPropDir[]): SortDirection {
+  calcSortDir(sorts: SortPropDir[]): SortDirection | undefined {
     if (!sorts) {
-      return;
+      return undefined;
     }
 
     const sort = sorts.find(s => s.prop === this.column.prop);
 
-    if (sort) {
-      return sort.dir as SortDirection;
-    }
+    return sort?.dir as SortDirection;
   }
 
   stripHtml(html: string): string {
@@ -466,8 +436,8 @@ export class DataTableBodyCellComponent<TRow extends { level?: number } = any>
     this.treeAction.emit(this.row);
   }
 
-  calcLeftMargin(column: TableColumn, row: RowOrGroup<TRow>): number {
+  calcLeftMargin(column: TableColumnInternal, row: RowOrGroup<TRow>): number {
     const levelIndent = column.treeLevelIndent != null ? column.treeLevelIndent : 50;
-    return column.isTreeColumn ? (row as TRow).level * levelIndent : 0;
+    return column.isTreeColumn ? (row as TRow).level! * levelIndent : 0;
   }
 }

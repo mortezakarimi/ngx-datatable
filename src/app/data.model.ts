@@ -1,8 +1,14 @@
+import { TreeStatus } from '../../projects/swimlane/ngx-datatable/src/lib/types/public.types';
+
 export interface Employee {
   name: string;
   gender: string;
   company: string;
   age?: number;
+}
+
+export interface TreeEmployee extends Employee {
+  treeStatus: TreeStatus;
 }
 
 export interface FullEmployee {
@@ -27,4 +33,7 @@ export interface GroupedEmployee {
   age: number;
   comment?: string;
   groupcomment?: string;
+  startdate?: string;
+  enddate?: string;
+  groupstatus?: string;
 }

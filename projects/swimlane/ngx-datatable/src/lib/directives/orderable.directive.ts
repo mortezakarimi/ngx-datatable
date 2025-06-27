@@ -2,6 +2,7 @@ import {
   AfterContentInit,
   ContentChildren,
   Directive,
+  DOCUMENT,
   EventEmitter,
   inject,
   KeyValueChangeRecord,
@@ -12,13 +13,14 @@ import {
   QueryList
 } from '@angular/core';
 import { DraggableDirective } from './draggable.directive';
-import { DOCUMENT } from '@angular/common';
-import { TableColumn } from '../types/table-column.type';
+
 import {
   DraggableDragEvent,
-  OrderableReorderEvent,
+  ReorderEventInternal,
+  TableColumnInternal,
   TargetChangedEvent
 } from '../types/internal.types';
+import { getPositionFromEvent } from '../utils/events';
 
 interface OrderPosition {
   left: number;
@@ -28,21 +30,20 @@ interface OrderPosition {
 }
 
 @Directive({
-  selector: '[orderable]',
-  standalone: true
+  selector: '[orderable]'
 })
 export class OrderableDirective implements AfterContentInit, OnDestroy {
   private document = inject(DOCUMENT);
 
-  @Output() reorder: EventEmitter<OrderableReorderEvent> = new EventEmitter();
-  @Output() targetChanged: EventEmitter<TargetChangedEvent> = new EventEmitter();
+  @Output() reorder = new EventEmitter<ReorderEventInternal>();
+  @Output() targetChanged = new EventEmitter<TargetChangedEvent>();
 
   @ContentChildren(DraggableDirective, { descendants: true })
-  draggables: QueryList<DraggableDirective>;
+  draggables!: QueryList<DraggableDirective>;
 
-  positions: Record<string, OrderPosition>;
+  positions?: Record<string, OrderPosition>;
   differ: KeyValueDiffer<string, DraggableDirective> = inject(KeyValueDiffers).find({}).create();
-  lastDraggingIndex: number;
+  lastDraggingIndex?: number;
 
   ngAfterContentInit(): void {
     // HACK: Investigate Better Way
@@ -104,13 +105,13 @@ export class OrderableDirective implements AfterContentInit, OnDestroy {
   }
 
   onDragging({ element, model, event }: DraggableDragEvent): void {
-    const prevPos = this.positions[model.$$id];
+    const prevPos = this.positions![model.$$id];
     const target = this.isTarget(model, event);
 
     if (target) {
       if (this.lastDraggingIndex !== target.i) {
         this.targetChanged.emit({
-          prevIndex: this.lastDraggingIndex,
+          prevIndex: this.lastDraggingIndex!,
           newIndex: target.i,
           initialIndex: prevPos.index
         });
@@ -118,7 +119,7 @@ export class OrderableDirective implements AfterContentInit, OnDestroy {
       }
     } else if (this.lastDraggingIndex !== prevPos.index) {
       this.targetChanged.emit({
-        prevIndex: this.lastDraggingIndex,
+        prevIndex: this.lastDraggingIndex!,
         initialIndex: prevPos.index
       });
       this.lastDraggingIndex = prevPos.index;
@@ -126,14 +127,14 @@ export class OrderableDirective implements AfterContentInit, OnDestroy {
   }
 
   onDragEnd({ element, model, event }: DraggableDragEvent): void {
-    const prevPos = this.positions[model.$$id];
+    const prevPos = this.positions![model.$$id];
 
     const target = this.isTarget(model, event);
     if (target) {
       this.reorder.emit({
-        prevIndex: prevPos.index,
-        newIndex: target.i,
-        model
+        prevValue: prevPos.index,
+        newValue: target.i,
+        column: model
       });
     }
 
@@ -141,11 +142,10 @@ export class OrderableDirective implements AfterContentInit, OnDestroy {
     element.style.left = 'auto';
   }
 
-  isTarget(model: TableColumn, event: MouseEvent) {
+  isTarget(model: TableColumnInternal, event: MouseEvent | TouchEvent) {
     let i = 0;
-    const x = event.x || event.clientX;
-    const y = event.y || event.clientY;
-    const targets = this.document.elementsFromPoint(x, y);
+    const { clientX, clientY } = getPositionFromEvent(event);
+    const targets = this.document.elementsFromPoint(clientX, clientY);
 
     for (const id in this.positions) {
       // current column position which throws event.
@@ -163,10 +163,10 @@ export class OrderableDirective implements AfterContentInit, OnDestroy {
     }
   }
 
-  private createMapDiffs(): { [key: string]: DraggableDirective } {
+  private createMapDiffs(): Record<string, DraggableDirective> {
     return this.draggables.toArray().reduce((acc, curr) => {
       acc[curr.dragModel.$$id] = curr;
       return acc;
-    }, {});
+    }, {} as Record<string, DraggableDirective>);
   }
 }

@@ -1,6 +1,12 @@
-import { Component } from '@angular/core';
-import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DataTableColumnCellDirective,
+  DataTableColumnDirective,
+  DatatableComponent
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'inline-edit-demo',
@@ -74,35 +80,26 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent, DataTableColumnDirective, DataTableColumnCellDirective]
 })
 export class InlineEditComponent {
-  editing = {};
+  editing: Record<string, boolean> = {};
   rows: Employee[] = [];
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data;
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
-  }
-
-  updateValue(event, cell, rowIndex: number) {
+  updateValue(event: Event, cell: 'name' | 'gender', rowIndex: number) {
     console.log('inline editing rowIndex', rowIndex);
     this.editing[rowIndex + '-' + cell] = false;
-    this.rows[rowIndex][cell] = event.target.value;
+    this.rows[rowIndex][cell] = (event.target as HTMLInputElement).value;
     this.rows = [...this.rows];
     console.log('UPDATED!', this.rows[rowIndex][cell]);
   }

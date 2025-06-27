@@ -1,12 +1,17 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, inject, ViewChild } from '@angular/core';
 import { GroupedEmployee } from '../data.model';
 import {
   ColumnMode,
+  DataTableColumnCellDirective,
+  DataTableColumnDirective,
   DatatableComponent,
+  DatatableGroupHeaderDirective,
+  DatatableGroupHeaderTemplateDirective,
   Group,
   GroupToggleEvents,
   SelectionType
 } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'row-grouping-demo',
@@ -87,7 +92,8 @@ import {
                 name="{{ rowIndex }}"
                 value="0"
                 class="expectedpayment"
-                (change)="checkGroup($event, row, rowIndex, group)"
+                [attr.aria-label]="'ex pay1' + rowIndex"
+                (change)="checkGroup($event, row, rowIndex, group!)"
                 [checked]="row.exppayyes === 1"
               />
             </label>
@@ -98,7 +104,8 @@ import {
                 name="{{ rowIndex }}"
                 value="1"
                 class="expectedpayment2"
-                (change)="checkGroup($event, row, rowIndex, group)"
+                [attr.aria-label]="'ex pay2' + rowIndex"
+                (change)="checkGroup($event, row, rowIndex, group!)"
                 [checked]="row.exppayno === 1"
               />
             </label>
@@ -109,7 +116,8 @@ import {
                 name="{{ rowIndex }}"
                 value="2"
                 class="expectedpayment3"
-                (change)="checkGroup($event, row, rowIndex, group)"
+                [attr.aria-label]="'ex pay3' + rowIndex"
+                (change)="checkGroup($event, row, rowIndex, group!)"
                 [checked]="row.exppaypending === 1"
               />
             </label>
@@ -145,10 +153,16 @@ import {
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [
+    DatatableComponent,
+    DatatableGroupHeaderDirective,
+    DatatableGroupHeaderTemplateDirective,
+    DataTableColumnDirective,
+    DataTableColumnCellDirective
+  ]
 })
 export class RowGroupingComponent {
-  @ViewChild('myTable') table: DatatableComponent<GroupedEmployee>;
+  @ViewChild('myTable') table!: DatatableComponent<GroupedEmployee>;
 
   editing: Record<string, boolean> = {};
   rows: GroupedEmployee[] = [];
@@ -156,39 +170,31 @@ export class RowGroupingComponent {
   ColumnMode = ColumnMode;
   SelectionType = SelectionType;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('forRowGrouping.json').subscribe(data => {
       this.rows = data;
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/forRowGrouping.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
-  }
-
-  checkGroup(event, row, rowIndex, group) {
+  checkGroup(event: Event, row: GroupedEmployee, rowIndex: number, group: GroupedEmployee[]) {
     let groupStatus = 'Pending';
     let expectedPaymentDealtWith = true;
+    const target = event.target as HTMLInputElement;
 
     row.exppayyes = 0;
     row.exppayno = 0;
     row.exppaypending = 0;
 
-    if (event.target.checked) {
-      if (event.target.value === '0') {
+    if (target.checked) {
+      if (target.value === '0') {
         // expected payment yes selected
         row.exppayyes = 1;
-      } else if (event.target.value === '1') {
+      } else if (target.value === '1') {
         // expected payment yes selected
         row.exppayno = 1;
-      } else if (event.target.value === '2') {
+      } else if (target.value === '2') {
         // expected payment yes selected
         row.exppaypending = 1;
       }
@@ -197,15 +203,15 @@ export class RowGroupingComponent {
     if (group.length === 2) {
       // There are only 2 lines in a group
       if (
-        ['Calculated', 'Funder'].indexOf(group[0].source) > -1 &&
-        ['Calculated', 'Funder'].indexOf(group[1].source) > -1
+        ['Calculated', 'Funder'].indexOf(group[0].source!) > -1 &&
+        ['Calculated', 'Funder'].indexOf(group[1].source!) > -1
       ) {
         // Sources are funder and calculated
         if (group[0].startdate === group[1].startdate && group[0].enddate === group[1].enddate) {
           // Start dates and end dates match
           for (let index = 0; index < group.length; index++) {
             if (group[index].source !== row.source) {
-              if (event.target.value === '0') {
+              if (target.value === '0') {
                 // expected payment yes selected
                 group[index].exppayyes = 0;
                 group[index].exppaypending = 0;
@@ -280,16 +286,15 @@ export class RowGroupingComponent {
     group[0].groupstatus = groupStatus;
   }
 
-  updateValue(event, cell, rowIndex) {
-    const index = rowIndex.split('-')[1];
+  updateValue(event: Event, cell: 'comment', rowIndex: number) {
     this.editing[rowIndex + '-' + cell] = false;
-    this.rows[index][cell] = event.target.value;
+    this.rows[rowIndex][cell] = (event.target as HTMLInputElement).value;
     this.rows = [...this.rows];
   }
 
   toggleExpandGroup(group: Group<GroupedEmployee>) {
     console.log('Toggled Expand Group!', group);
-    this.table.groupHeader.toggleExpandGroup(group);
+    this.table.groupHeader!.toggleExpandGroup(group);
   }
 
   onDetailToggle(event: GroupToggleEvents<GroupedEmployee>) {

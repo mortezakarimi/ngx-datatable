@@ -1,6 +1,13 @@
-import { Component } from '@angular/core';
-import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DataTableColumnCellDirective,
+  DataTableColumnDirective,
+  DataTableColumnHeaderDirective,
+  DatatableComponent
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'inline-templates-demo',
@@ -52,7 +59,12 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [
+    DatatableComponent,
+    DataTableColumnDirective,
+    DataTableColumnHeaderDirective,
+    DataTableColumnCellDirective
+  ]
 })
 export class InlineTemplatesComponent {
   rows: Employee[] = [];
@@ -60,20 +72,11 @@ export class InlineTemplatesComponent {
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data.splice(0, 5);
     });
-  }
-
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
   }
 }

@@ -1,12 +1,11 @@
 import { ContentChild, Directive, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { DatatableGroupHeaderTemplateDirective } from './body-group-header-template.directive';
-import { Group, GroupContext, GroupToggleEvents } from '../../types/public.types';
+import { Group, GroupContext, GroupToggleEvents, Row } from '../../types/public.types';
 
 @Directive({
-  selector: 'ngx-datatable-group-header',
-  standalone: true
+  selector: 'ngx-datatable-group-header'
 })
-export class DatatableGroupHeaderDirective<TRow = any> {
+export class DatatableGroupHeaderDirective<TRow extends Row = any> {
   /**
    * Row height is required when virtual scroll is enabled.
    */
@@ -18,12 +17,12 @@ export class DatatableGroupHeaderDirective<TRow = any> {
   @Input() checkboxable = false;
 
   @Input('template')
-  _templateInput: TemplateRef<GroupContext<TRow>>;
+  _templateInput?: TemplateRef<GroupContext<TRow>>;
 
   @ContentChild(DatatableGroupHeaderTemplateDirective, { read: TemplateRef, static: true })
-  _templateQuery: TemplateRef<GroupContext<TRow>>;
+  _templateQuery?: TemplateRef<GroupContext<TRow>>;
 
-  get template(): TemplateRef<GroupContext<TRow>> {
+  get template(): TemplateRef<GroupContext<TRow>> | undefined {
     return this._templateInput || this._templateQuery;
   }
 

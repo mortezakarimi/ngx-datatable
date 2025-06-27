@@ -1,6 +1,13 @@
-import { Component } from '@angular/core';
-import { ColumnMode, TableColumn } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DatatableComponent,
+  DatatableFooterDirective,
+  DataTableFooterTemplateDirective,
+  TableColumn
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'footer-demo',
@@ -48,7 +55,7 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent, DatatableFooterDirective, DataTableFooterTemplateDirective]
 })
 export class FooterDemoComponent {
   rows: Employee[] = [];
@@ -57,20 +64,11 @@ export class FooterDemoComponent {
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data.splice(0, 5);
     });
-  }
-
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
   }
 }

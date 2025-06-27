@@ -1,6 +1,12 @@
-import { Component } from '@angular/core';
-import { ColumnMode, TableColumn } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DatatableComponent,
+  TableColumn
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
+import { NgClass } from '@angular/common';
 
 @Component({
   selector: 'column-reorder-demo',
@@ -55,7 +61,7 @@ import { Employee } from '../data.model';
       </ng-template>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent, NgClass]
 })
 export class ColumnReorderComponent {
   rows: Employee[] = [];
@@ -71,23 +77,14 @@ export class ColumnReorderComponent {
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data;
       setTimeout(() => {
         this.loadingIndicator = false;
       }, 1500);
     });
-  }
-
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
   }
 }

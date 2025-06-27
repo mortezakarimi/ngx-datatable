@@ -1,0 +1,27 @@
+:host {
+  position: relative;
+  z-index: 10;
+  display: block;
+  overflow: hidden;
+
+  :host-context(ngx-datatable.scroll-horz) & {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; // Required for iOS optimization
+  }
+}
+
+datatable-scroller {
+  display: block;
+
+  :host-context(ngx-datatable.fixed-row) & {
+    white-space: nowrap;
+  }
+}
+
+:host-context(ngx-datatable.scroll-vertical) :host {
+  overflow-y: auto;
+}
+
+[hidden] {
+  display: none !important;
+}

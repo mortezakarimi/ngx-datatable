@@ -1,14 +1,6 @@
-import { Component, Input, OnChanges, PipeTransform, TemplateRef } from '@angular/core';
-import { TableColumn, TableColumnProp } from '../../../types/table-column.type';
+import { Component, Input, OnChanges } from '@angular/core';
 import { DataTableBodyRowComponent } from '../body-row.component';
-
-export interface ISummaryColumn {
-  summaryFunc?: (cells: any[]) => any;
-  summaryTemplate?: TemplateRef<any>;
-
-  prop?: TableColumnProp;
-  pipe?: PipeTransform;
-}
+import { TableColumnInternal } from '../../../types/internal.types';
 
 function defaultSumFunc(cells: any[]): any {
   const cellsWithValues = cells.filter(cell => !!cell);
@@ -24,7 +16,7 @@ function defaultSumFunc(cells: any[]): any {
 }
 
 function noopSumFunc(cells: any[]): void {
-  return null;
+  return;
 }
 
 @Component({
@@ -34,11 +26,10 @@ function noopSumFunc(cells: any[]): void {
     <datatable-body-row
       tabindex="-1"
       [innerWidth]="innerWidth"
-      [offsetX]="offsetX"
       [columns]="_internalColumns"
       [rowHeight]="rowHeight"
       [row]="summaryRow"
-      [rowIndex]="-1"
+      [rowIndex]="{ index: -1 }"
     >
     </datatable-body-row>
     }
@@ -49,18 +40,17 @@ function noopSumFunc(cells: any[]): void {
   imports: [DataTableBodyRowComponent]
 })
 export class DataTableSummaryRowComponent implements OnChanges {
-  @Input() rows: any[];
-  @Input() columns: TableColumn[];
+  @Input() rows!: any[];
+  @Input() columns!: TableColumnInternal[];
 
-  @Input() rowHeight: number;
-  @Input() offsetX: number;
-  @Input() innerWidth: number;
+  @Input() rowHeight!: number;
+  @Input() innerWidth!: number;
 
-  _internalColumns: ISummaryColumn[];
+  _internalColumns!: TableColumnInternal[];
   summaryRow: any = {};
 
   ngOnChanges() {
-    if (!this.columns || !this.rows) {
+    if (!this.columns.length || !this.rows.length) {
       return;
     }
     this.updateInternalColumns();
@@ -78,18 +68,18 @@ export class DataTableSummaryRowComponent implements OnChanges {
     this.summaryRow = {};
 
     this.columns
-      .filter(col => !col.summaryTemplate)
+      .filter(col => !col.summaryTemplate && col.prop)
       .forEach(col => {
-        const cellsFromSingleColumn = this.rows.map(row => row[col.prop]);
+        const cellsFromSingleColumn = this.rows.map(row => row[col.prop!]);
         const sumFunc = this.getSummaryFunction(col);
 
-        this.summaryRow[col.prop] = col.pipe
+        this.summaryRow[col.prop!] = col.pipe
           ? col.pipe.transform(sumFunc(cellsFromSingleColumn))
           : sumFunc(cellsFromSingleColumn);
       });
   }
 
-  private getSummaryFunction(column: ISummaryColumn): (a: any[]) => any {
+  private getSummaryFunction(column: TableColumnInternal): (a: any[]) => any {
     if (column.summaryFunc === undefined) {
       return defaultSumFunc;
     } else if (column.summaryFunc === null) {

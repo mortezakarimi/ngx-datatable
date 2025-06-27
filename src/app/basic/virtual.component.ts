@@ -1,6 +1,13 @@
-import { Component } from '@angular/core';
-import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DataTableColumnCellDirective,
+  DataTableColumnDirective,
+  DatatableComponent,
+  PageEvent
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { FullEmployee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'virtual-scroll-demo',
@@ -41,46 +48,31 @@ import { FullEmployee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent, DataTableColumnDirective, DataTableColumnCellDirective]
 })
 export class VirtualScrollComponent {
-  rows: FullEmployee[];
+  rows: (FullEmployee & { height: number })[] = [];
   expanded = {};
   timeout: any;
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
-      this.rows = data;
+    this.dataService.load('100k.json').subscribe(data => {
+      this.rows = data.map(row => ({ ...row, height: Math.floor(Math.random() * 80) + 50 }));
     });
   }
 
-  onPage(event) {
+  onPage(event: PageEvent) {
     clearTimeout(this.timeout);
     this.timeout = setTimeout(() => {
       console.log('paged!', event);
     }, 100);
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/100k.json`);
-
-    req.onload = () => {
-      const rows = JSON.parse(req.response);
-
-      for (const row of rows) {
-        row.height = Math.floor(Math.random() * 80) + 50;
-      }
-
-      cb(rows);
-    };
-
-    req.send();
-  }
-
-  getRowHeight(row) {
+  getRowHeight(row: FullEmployee & { height: number }) {
     return row.height;
   }
 }

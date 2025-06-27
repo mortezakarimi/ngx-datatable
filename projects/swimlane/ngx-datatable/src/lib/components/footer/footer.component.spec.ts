@@ -2,7 +2,6 @@ import { Component, DebugElement, TemplateRef, ViewChild } from '@angular/core';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { addMatchers } from '../../test';
 import { DataTablePagerComponent } from './pager.component';
 import { DataTableFooterComponent } from './footer.component';
 
@@ -11,9 +10,12 @@ let component: TestFixtureComponent;
 let page: Page;
 
 describe('DataTableFooterComponent', () => {
-  beforeAll(addMatchers);
-
-  beforeEach(waitForAsync(setupTest));
+  beforeEach(waitForAsync(() => {
+    fixture = TestBed.createComponent(TestFixtureComponent);
+    component = fixture.componentInstance;
+    page = new Page();
+    page.detectChangesAndRunQueries();
+  }));
 
   describe('div.datatable-footer-inner', () => {
     it(`should have a height`, () => {
@@ -28,14 +30,14 @@ describe('DataTableFooterComponent', () => {
       component.selectedCount = 1;
       page.detectChangesAndRunQueries();
 
-      expect(page.datatableFooterInner.nativeElement).toHaveCssClass('selected-count');
+      expect(page.datatableFooterInner.nativeElement).toHaveClass('selected-count');
     });
 
     it('should not have `.selected-count` class if selectedMessage is not set', () => {
       component.selectedMessage = undefined;
       page.detectChangesAndRunQueries();
 
-      expect(page.datatableFooterInner.nativeElement).not.toHaveCssClass('selected-count');
+      expect(page.datatableFooterInner.nativeElement).not.toHaveClass('selected-count');
     });
   });
 
@@ -156,19 +158,13 @@ describe('DataTableFooterComponent', () => {
       component.pageSize = 5;
       page.detectChangesAndRunQueries();
 
-      expect(page.datatablePager.nativeElement.hidden).toBe(
-        false,
-        'DataTablePagerComponent should be hidden'
-      );
+      expect(page.datatablePager).toBeTruthy();
 
       component.rowCount = 1;
       component.pageSize = 2;
       page.detectChangesAndRunQueries();
 
-      expect(page.datatablePager.nativeElement.hidden).toBe(
-        true,
-        'DataTablePagerComponent should not be hidden'
-      );
+      expect(page.datatablePager).toBeFalsy();
     });
   });
 
@@ -198,11 +194,11 @@ describe('DataTableFooterComponent', () => {
       page.detectChangesAndRunQueries();
       const listItems = page.templateList.queryAll(By.css('li'));
 
-      expect(listItems[0].nativeElement).toHaveText('rowCount 12');
-      expect(listItems[1].nativeElement).toHaveText('pageSize 1');
-      expect(listItems[2].nativeElement).toHaveText('selectedCount 4');
-      expect(listItems[3].nativeElement).toHaveText('curPage 1');
-      expect(listItems[4].nativeElement).toHaveText('offset 0');
+      expect(listItems[0].nativeElement.innerHTML).toContain('rowCount 12');
+      expect(listItems[1].nativeElement.innerHTML).toContain('pageSize 1');
+      expect(listItems[2].nativeElement.innerHTML).toContain('selectedCount 4');
+      expect(listItems[3].nativeElement.innerHTML).toContain('curPage 1');
+      expect(listItems[4].nativeElement.innerHTML).toContain('offset 0');
     });
   });
 });
@@ -226,7 +222,7 @@ describe('DataTableFooterComponent', () => {
       [selectedCount]="selectedCount"
       [selectedMessage]="selectedMessage"
       [pagerNextIcon]="pagerNextIcon"
-      (page)="onPageEvent($event)"
+      (page)="onPageEvent()"
     >
     </datatable-footer>
 
@@ -250,18 +246,18 @@ describe('DataTableFooterComponent', () => {
   imports: [DataTableFooterComponent]
 })
 class TestFixtureComponent {
-  footerHeight: number;
+  footerHeight = 0;
   rowCount = 100;
   pageSize = 1;
   offset = 0;
-  pagerLeftArrowIcon: string;
-  pagerRightArrowIcon: string;
-  pagerPreviousIcon: string;
-  pagerNextIcon: string;
-  totalMessage: string;
-  footerTemplate: { template: TemplateRef<any> };
-  selectedCount: number;
-  selectedMessage: string;
+  pagerLeftArrowIcon = '';
+  pagerRightArrowIcon = '';
+  pagerPreviousIcon = '';
+  pagerNextIcon = '';
+  totalMessage = '';
+  footerTemplate?: { template: TemplateRef<any> };
+  selectedCount = 0;
+  selectedMessage?: string;
 
   /**
    * establishes a reference to a test template that can
@@ -269,24 +265,11 @@ class TestFixtureComponent {
    * in these unit tests
    */
   @ViewChild('testTemplate', { read: TemplateRef, static: true })
-  testTemplate: TemplateRef<any>;
+  testTemplate!: TemplateRef<any>;
 
   onPageEvent() {
     return;
   }
-}
-
-function setupTest() {
-  return TestBed.configureTestingModule({
-    imports: [TestFixtureComponent]
-  })
-    .compileComponents()
-    .then(() => {
-      fixture = TestBed.createComponent(TestFixtureComponent);
-      component = fixture.componentInstance;
-      page = new Page();
-      page.detectChangesAndRunQueries();
-    });
 }
 
 /**
@@ -294,11 +277,11 @@ function setupTest() {
  * makes for cleaner testing
  */
 class Page {
-  datatableFooter: DebugElement;
-  datatableFooterInner: DebugElement;
-  templateList: DebugElement;
-  pageCount: DebugElement;
-  datatablePager: DebugElement;
+  datatableFooter!: DebugElement;
+  datatableFooterInner!: DebugElement;
+  templateList!: DebugElement;
+  pageCount!: DebugElement;
+  datatablePager!: DebugElement;
 
   detectChangesAndRunQueries() {
     fixture.detectChanges();

@@ -1,7 +1,11 @@
-import { Component, ViewChild } from '@angular/core';
-import { DatatableComponent } from 'projects/swimlane/ngx-datatable/src/lib/components/datatable.component';
-import { ColumnMode, TableColumn } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject, ViewChild } from '@angular/core';
+import {
+  ColumnMode,
+  DatatableComponent,
+  TableColumn
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'filter-demo',
@@ -38,7 +42,7 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent]
 })
 export class FilterComponent {
   rows: Employee[] = [];
@@ -46,12 +50,14 @@ export class FilterComponent {
   temp: Employee[] = [];
 
   columns: TableColumn[] = [{ prop: 'name' }, { name: 'Company' }, { name: 'Gender' }];
-  @ViewChild(DatatableComponent) table: DatatableComponent<Employee>;
+  @ViewChild(DatatableComponent) table!: DatatableComponent<Employee>;
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       // cache our list
       this.temp = [...data];
 
@@ -60,19 +66,8 @@ export class FilterComponent {
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
-  }
-
-  updateFilter(event) {
-    const val = event.target.value.toLowerCase();
+  updateFilter(event: KeyboardEvent) {
+    const val = (event.target as HTMLInputElement).value.toLowerCase();
 
     // filter our data and update the rows
     this.rows = this.temp.filter(function (d) {

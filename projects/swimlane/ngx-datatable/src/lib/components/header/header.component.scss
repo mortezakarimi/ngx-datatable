@@ -1,0 +1,20 @@
+@use '../shared';
+
+:host {
+  display: block;
+  overflow: hidden;
+}
+
+.datatable-header-inner {
+  display: flex;
+
+  :host-context(ngx-datatable.fixed-header) & {
+    white-space: nowrap;
+  }
+}
+
+.datatable-row-group {
+  display: flex;
+}
+
+@include shared.pinned-columns();

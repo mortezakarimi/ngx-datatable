@@ -1,6 +1,5 @@
 import { PipeTransform, TemplateRef } from '@angular/core';
-import { ValueGetter } from '../utils/column-prop-getters';
-import { CellContext, HeaderCellContext } from './public.types';
+import { CellContext, HeaderCellContext, Row } from './public.types';
 
 /**
  * Column property that indicates how to retrieve this column's
@@ -12,22 +11,7 @@ export type TableColumnProp = string | number;
 /**
  * Column Type
  */
-export interface TableColumn<TRow = any> {
-  /**
-   * Internal unique id
-   */
-  $$id?: string;
-
-  /**
-   * Internal for column width distributions
-   */
-  $$oldWidth?: number;
-
-  /**
-   * Internal for setColumnDefaults
-   */
-  $$valueGetter?: ValueGetter;
-
+export interface TableColumn<TRow extends Row = any> {
   /**
    * Determines if column is checkbox
    */
@@ -74,7 +58,13 @@ export interface TableColumn<TRow = any> {
   /**
    * Custom sort comparator
    */
-  comparator?: any;
+  comparator?: (
+    valueA: any,
+    valueB: any,
+    rowA: TRow,
+    rowB: TRow,
+    sortDir: 'desc' | 'asc'
+  ) => number;
 
   /**
    * Custom pipe transforms
@@ -90,15 +80,6 @@ export interface TableColumn<TRow = any> {
    * Can the column be re-arranged by dragging
    */
   draggable?: boolean;
-
-  /** @internal */
-  dragging?: boolean;
-
-  /** @internal */
-  isTarget?: boolean;
-
-  /** @internal */
-  targetMarkerContext?: any;
 
   /**
    * Whether the column can automatically resize to fill space in the table.
@@ -182,17 +163,15 @@ export interface TableColumn<TRow = any> {
 
   /**
    * Summary function
+   *
+   * Null and undefined have different meanings:
+   *  - undefined will use the default summary function
+   *  - null will not compute a summary
    */
-  summaryFunc?: (cells: any[]) => any;
+  summaryFunc?: ((cells: any[]) => any) | null;
 
   /**
    * Summary cell template ref
    */
   summaryTemplate?: TemplateRef<any>;
-}
-
-export interface TableColumnGroup {
-  left: TableColumn[];
-  center: TableColumn[];
-  right: TableColumn[];
 }

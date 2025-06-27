@@ -1,10 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
+  ActivateEvent,
   ColumnMode,
+  DatatableComponent,
+  SelectEvent,
   SelectionType,
   TableColumn
 } from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'single-selection-demo',
@@ -60,7 +64,7 @@ import { Employee } from '../data.model';
       </div>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent]
 })
 export class SingleSelectionComponent {
   rows: Employee[] = [];
@@ -72,29 +76,20 @@ export class SingleSelectionComponent {
   ColumnMode = ColumnMode;
   SelectionType = SelectionType;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.selected = [data[2]];
       this.rows = data;
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
-  }
-
-  onSelect({ selected }) {
+  onSelect({ selected }: SelectEvent<Employee>) {
     console.log('Select Event', selected, this.selected);
   }
 
-  onActivate(event) {
+  onActivate(event: ActivateEvent<Employee>) {
     console.log('Activate Event', event);
   }
 }

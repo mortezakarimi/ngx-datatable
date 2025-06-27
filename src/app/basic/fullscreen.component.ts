@@ -1,6 +1,11 @@
-import { Component } from '@angular/core';
-import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DataTableColumnDirective,
+  DatatableComponent
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { FullEmployee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'full-screen-demo',
@@ -41,27 +46,18 @@ import { FullEmployee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent, DataTableColumnDirective]
 })
 export class FullScreenComponent {
   rows: FullEmployee[] = [];
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('100k.json').subscribe(data => {
       this.rows = data;
     });
-  }
-
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/100k.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
   }
 }

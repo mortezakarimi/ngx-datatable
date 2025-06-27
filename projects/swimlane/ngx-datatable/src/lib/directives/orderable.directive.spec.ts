@@ -4,7 +4,8 @@ import { By } from '@angular/platform-browser';
 
 import { OrderableDirective } from './orderable.directive';
 import { DraggableDirective } from './draggable.directive';
-import { id } from '../utils/id';
+import { TableColumnInternal } from '../types/internal.types';
+import { toInternalColumn } from '../utils/column-helper';
 
 @Component({
   selector: 'test-fixture-component',
@@ -18,7 +19,7 @@ import { id } from '../utils/id';
   imports: [OrderableDirective, DraggableDirective]
 })
 class TestFixtureComponent {
-  draggables = [];
+  draggables: TableColumnInternal[] = [];
   @ViewChildren(DraggableDirective) draggableDirectives!: QueryList<DraggableDirective>;
 }
 
@@ -26,24 +27,15 @@ describe('OrderableDirective', () => {
   let fixture: ComponentFixture<TestFixtureComponent>;
   let component: TestFixtureComponent;
 
-  // provide our implementations or mocks to the dependency injector
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      imports: [OrderableDirective, TestFixtureComponent, DraggableDirective]
-    });
-  });
-
   beforeEach(waitForAsync(() => {
-    TestBed.compileComponents().then(() => {
-      fixture = TestBed.createComponent(TestFixtureComponent);
-      component = fixture.componentInstance;
-      /* This is required in order to resolve the `ContentChildren`.
-       *  If we don't go through at least on change detection cycle
-       *  the `draggables` will be `undefined` and `ngOnDestroy` will
-       *  fail.
-       */
-      fixture.detectChanges();
-    });
+    fixture = TestBed.createComponent(TestFixtureComponent);
+    component = fixture.componentInstance;
+    /* This is required in order to resolve the `ContentChildren`.
+     *  If we don't go through at least on change detection cycle
+     *  the `draggables` will be `undefined` and `ngOnDestroy` will
+     *  fail.
+     */
+    fixture.detectChanges();
   }));
 
   describe('fixture', () => {
@@ -81,14 +73,12 @@ describe('OrderableDirective', () => {
         });
       }
 
-      function newDraggable() {
-        return {
-          $$id: id()
-        };
+      function newDraggable(name: string): TableColumnInternal {
+        return toInternalColumn([{ name }])[0];
       }
 
       beforeEach(() => {
-        component.draggables = [newDraggable(), newDraggable(), newDraggable()];
+        component.draggables = [newDraggable('d1'), newDraggable('d2'), newDraggable('d3')];
         fixture.detectChanges();
 
         checkAllSubscriptionsForActiveObservers();

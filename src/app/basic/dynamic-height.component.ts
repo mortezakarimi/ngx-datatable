@@ -1,6 +1,11 @@
-import { Component } from '@angular/core';
-import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DataTableColumnDirective,
+  DatatableComponent
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { FullEmployee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'dynamic-height-demo',
@@ -32,39 +37,26 @@ import { FullEmployee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent, DataTableColumnDirective]
 })
 export class DynamicHeightComponent {
-  rows: FullEmployee[] = [];
+  rows: (FullEmployee & { height: number })[] = [];
   expanded = {};
   timeout: any;
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
-      this.rows = data;
+    this.dataService.load('100k.json').subscribe(data => {
+      this.rows = data
+        .splice(0, 100)
+        .map(d => ({ ...d, height: Math.floor(Math.random() * 80) + 50 }));
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/100k.json`);
-
-    req.onload = () => {
-      const rows = JSON.parse(req.response).splice(0, 100);
-
-      for (const row of rows) {
-        row.height = Math.floor(Math.random() * 80) + 50;
-      }
-
-      cb(rows);
-    };
-
-    req.send();
-  }
-
-  getRowHeight(row) {
+  getRowHeight(row: FullEmployee & { height: number }) {
     console.log('ROW', row);
     if (!row) {
       return 50;

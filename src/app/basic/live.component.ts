@@ -1,6 +1,11 @@
-import { Component, ViewChild } from '@angular/core';
-import { ColumnMode, DatatableComponent } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject, ViewChild } from '@angular/core';
+import {
+  ColumnMode,
+  DataTableColumnDirective,
+  DatatableComponent
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'live-data-demo',
@@ -40,25 +45,27 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent, DataTableColumnDirective]
 })
 export class LiveDataComponent {
-  @ViewChild('mydatatable') mydatatable: DatatableComponent<Employee & { updated: string }>;
+  @ViewChild('mydatatable') mydatatable!: DatatableComponent<Employee & { updated: string }>;
 
   count = 50;
   rows: (Employee & { updated: string })[] = [];
   active = true;
   temp: (Employee & { updated: string })[] = [];
-  cols = ['name', 'gender', 'company'];
+  cols = ['name', 'gender', 'company'] as const;
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
-      this.rows = data.map(d => {
-        d.updated = Date.now().toString();
-        return d;
-      });
+    this.dataService.load('company.json').subscribe(data => {
+      this.rows = data.map(d => ({
+        ...d,
+        updated: Date.now().toString()
+      }));
 
       this.temp = [...this.rows];
     });
@@ -108,16 +115,5 @@ export class LiveDataComponent {
     // this.cd.markForCheck();
     // this.mydatatable.update();
     this.start();
-  }
-
-  fetch(cb: any): void {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
   }
 }

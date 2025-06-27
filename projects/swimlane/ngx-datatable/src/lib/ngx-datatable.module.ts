@@ -2,7 +2,6 @@ import { ModuleWithProviders, NgModule } from '@angular/core';
 import { DataTableFooterTemplateDirective } from './components/footer/footer-template.directive';
 import { DatatableComponent } from './components/datatable.component';
 import { DataTableColumnDirective } from './components/columns/column.directive';
-import { DataTablePagerComponent } from './components/footer/pager.component';
 import { DatatableRowDetailDirective } from './components/row-detail/row-detail.directive';
 import { DatatableGroupHeaderDirective } from './components/body/body-group-header.directive';
 import { DatatableRowDetailTemplateDirective } from './components/row-detail/row-detail-template.directive';
@@ -17,13 +16,13 @@ import {
   DatatableRowDefComponent,
   DatatableRowDefDirective
 } from './components/body/body-row-def.component';
+import { AllPartial, NgxDatatableConfig, providedNgxDatatableConfig } from './ngx-datatable.config';
 
 @NgModule({
   imports: [
     DataTableFooterTemplateDirective,
     DatatableComponent,
     DataTableColumnDirective,
-    DataTablePagerComponent,
     DatatableRowDetailDirective,
     DatatableGroupHeaderDirective,
     DatatableRowDetailTemplateDirective,
@@ -49,7 +48,6 @@ import {
     DataTableColumnCellTreeToggle,
     DataTableFooterTemplateDirective,
     DatatableFooterDirective,
-    DataTablePagerComponent,
     DatatableGroupHeaderTemplateDirective,
     DisableRowDirective,
     DatatableRowDefComponent,
@@ -61,34 +59,12 @@ export class NgxDatatableModule {
    * Configure global configuration via INgxDatatableConfig
    * @param configuration
    */
-  static forRoot(configuration: INgxDatatableConfig): ModuleWithProviders<NgxDatatableModule> {
+  static forRoot(
+    configuration: AllPartial<NgxDatatableConfig>
+  ): ModuleWithProviders<NgxDatatableModule> {
     return {
       ngModule: NgxDatatableModule,
-      providers: [{ provide: 'configuration', useValue: configuration }]
+      providers: [providedNgxDatatableConfig(configuration)]
     };
   }
-}
-
-/**
- * Interface definition for INgxDatatableConfig global configuration
- */
-export interface INgxDatatableConfig {
-  messages?: {
-    emptyMessage: string; // Message to show when array is presented, but contains no values
-    totalMessage: string; // Footer total message
-    selectedMessage: string; // Footer selected message
-  };
-  cssClasses?: {
-    sortAscending: string;
-    sortDescending: string;
-    sortUnset: string;
-    pagerLeftArrow: string;
-    pagerRightArrow: string;
-    pagerPrevious: string;
-    pagerNext: string;
-  };
-  headerHeight?: number;
-  footerHeight?: number;
-  rowHeight?: number;
-  defaultColumnWidth?: number;
 }

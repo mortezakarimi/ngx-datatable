@@ -1,10 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
+  ActivateEvent,
   ColumnMode,
+  DatatableComponent,
+  SelectEvent,
   SelectionType,
   TableColumn
 } from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'cell-selection-demo',
@@ -37,7 +41,7 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent]
 })
 export class CellSelectionComponent {
   rows: Employee[] = [];
@@ -47,28 +51,19 @@ export class CellSelectionComponent {
   ColumnMode = ColumnMode;
   SelectionType = SelectionType;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data;
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
-  }
-
-  onSelect(event) {
+  onSelect(event: SelectEvent<Employee>) {
     console.log('Event: select', event, this.selected);
   }
 
-  onActivate(event) {
+  onActivate(event: ActivateEvent<Employee>) {
     console.log('Event: activate', event);
   }
 }

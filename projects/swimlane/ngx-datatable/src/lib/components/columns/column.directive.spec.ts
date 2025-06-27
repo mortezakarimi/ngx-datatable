@@ -4,6 +4,8 @@ import { By } from '@angular/platform-browser';
 
 import { ColumnChangesService } from '../../services/column-changes.service';
 import { DataTableColumnDirective } from './column.directive';
+import { Row } from '../../types/public.types';
+import Spy = jasmine.Spy;
 
 @Component({
   selector: 'test-fixture-component',
@@ -14,40 +16,24 @@ import { DataTableColumnDirective } from './column.directive';
       <ng-template></ng-template>
     </ngx-datatable-column>
   `,
-  imports: [DataTableColumnDirective]
+  imports: [DataTableColumnDirective],
+  providers: [ColumnChangesService] // usually provided by the table.component
 })
 class TestFixtureComponent {
-  columnName: string;
+  columnName?: string;
 }
 
 describe('DataTableColumnDirective', () => {
   let fixture: ComponentFixture<TestFixtureComponent>;
   let component: TestFixtureComponent;
 
-  // provide our implementations or mocks to the dependency injector
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      imports: [DataTableColumnDirective, TestFixtureComponent],
-      providers: [
-        {
-          provide: ColumnChangesService,
-          useValue: {
-            onInputChange: jasmine.createSpy('onInputChange')
-          }
-        }
-      ]
-    });
-  });
-
   beforeEach(waitForAsync(() => {
-    TestBed.compileComponents().then(() => {
-      fixture = TestBed.createComponent(TestFixtureComponent);
-      component = fixture.componentInstance;
-    });
+    fixture = TestBed.createComponent(TestFixtureComponent);
+    component = fixture.componentInstance;
   }));
 
   describe('fixture', () => {
-    let directive: DataTableColumnDirective<unknown>;
+    let directive: DataTableColumnDirective<Row>;
 
     beforeEach(() => {
       directive = fixture.debugElement
@@ -65,14 +51,10 @@ describe('DataTableColumnDirective', () => {
   });
 
   describe('directive #1', () => {
-    let directive: DataTableColumnDirective<unknown>;
+    let directive: DataTableColumnDirective<Row>;
 
     beforeEach(() => {
       directive = fixture.debugElement.query(By.css('#t1')).injector.get(DataTableColumnDirective);
-    });
-
-    it('should be found', () => {
-      expect(directive).toBeTruthy();
     });
 
     it('should have undefined inputs by default', () => {
@@ -96,33 +78,28 @@ describe('DataTableColumnDirective', () => {
   });
 
   describe('directive #2', () => {
-    let directive: DataTableColumnDirective<unknown>;
+    let columnInputChange: Spy<() => void>;
 
     beforeEach(() => {
-      directive = fixture.debugElement.query(By.css('#t2')).injector.get(DataTableColumnDirective);
+      columnInputChange = spyOn(ColumnChangesService.prototype, 'onInputChange');
     });
-
-    it('should be found', () => {
-      expect(directive).toBeTruthy();
-    });
-
     it('should not notify of changes if its the first change', () => {
       component.columnName = 'Column A';
       fixture.detectChanges();
 
-      expect(TestBed.inject(ColumnChangesService).onInputChange).not.toHaveBeenCalled();
+      expect(columnInputChange).not.toHaveBeenCalled();
     });
 
     it('notifies of subsequent changes', () => {
       component.columnName = 'Column A';
       fixture.detectChanges();
 
-      expect(TestBed.inject(ColumnChangesService).onInputChange).not.toHaveBeenCalled();
+      expect(columnInputChange).not.toHaveBeenCalled();
 
       component.columnName = 'Column B';
       fixture.detectChanges();
 
-      expect(TestBed.inject(ColumnChangesService).onInputChange).toHaveBeenCalled();
+      expect(columnInputChange).toHaveBeenCalled();
     });
   });
 });

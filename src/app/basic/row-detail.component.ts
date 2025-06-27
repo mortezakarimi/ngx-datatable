@@ -1,6 +1,16 @@
-import { Component, ViewChild, ViewEncapsulation } from '@angular/core';
-import { ColumnMode, DatatableComponent } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject, ViewChild, ViewEncapsulation } from '@angular/core';
+import {
+  ColumnMode,
+  DataTableColumnCellDirective,
+  DataTableColumnDirective,
+  DatatableComponent,
+  DatatableRowDetailDirective,
+  DatatableRowDetailTemplateDirective,
+  DetailToggleEvents,
+  PageEvent
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { FullEmployee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'row-details-demo',
@@ -17,9 +27,9 @@ import { FullEmployee } from '../data.model';
           </a>
         </small>
         <small>
-          <a href="javascript:void(0)" (click)="table.rowDetail.expandAllRows()">Expand All</a>
+          <a href="javascript:void(0)" (click)="table.rowDetail!.expandAllRows()">Expand All</a>
           |
-          <a href="javascript:void(0)" (click)="table.rowDetail.collapseAllRows()">Collapse All</a>
+          <a href="javascript:void(0)" (click)="table.rowDetail!.collapseAllRows()">Collapse All</a>
         </small>
       </h3>
       <ngx-datatable
@@ -86,11 +96,18 @@ import { FullEmployee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
+  // eslint-disable-next-line @angular-eslint/use-component-view-encapsulation
   encapsulation: ViewEncapsulation.None,
-  standalone: false
+  imports: [
+    DatatableComponent,
+    DatatableRowDetailDirective,
+    DatatableRowDetailTemplateDirective,
+    DataTableColumnDirective,
+    DataTableColumnCellDirective
+  ]
 })
 export class RowDetailsComponent {
-  @ViewChild('myTable') table: DatatableComponent<FullEmployee>;
+  @ViewChild('myTable') table!: DatatableComponent<FullEmployee>;
 
   rows: FullEmployee[] = [];
   expanded: any = {};
@@ -98,36 +115,27 @@ export class RowDetailsComponent {
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('100k.json').subscribe(data => {
       this.rows = data;
     });
   }
 
-  onPage(event) {
+  onPage(event: PageEvent) {
     clearTimeout(this.timeout);
     this.timeout = setTimeout(() => {
       console.log('paged!', event);
     }, 100);
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/100k.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
-  }
-
-  toggleExpandRow(row) {
+  toggleExpandRow(row: FullEmployee) {
     console.log('Toggled Expand Row!', row);
-    this.table.rowDetail.toggleExpandRow(row);
+    this.table.rowDetail!.toggleExpandRow(row);
   }
 
-  onDetailToggle(event) {
+  onDetailToggle(event: DetailToggleEvents<FullEmployee>) {
     console.log('Detail Toggled', event);
   }
 }

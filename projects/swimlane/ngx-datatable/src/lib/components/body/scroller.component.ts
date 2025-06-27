@@ -18,22 +18,21 @@ import {
   host: {
     class: 'datatable-scroll'
   },
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ScrollerComponent implements OnInit, OnDestroy {
   private renderer = inject(Renderer2);
 
-  @Input() scrollbarV = false;
-  @Input() scrollbarH = false;
+  @Input() scrollbarV?: boolean;
+  @Input() scrollbarH?: boolean;
 
   @HostBinding('style.height.px')
   @Input()
-  scrollHeight: number;
+  scrollHeight?: number;
 
   @HostBinding('style.width.px')
   @Input()
-  scrollWidth: number;
+  scrollWidth?: number;
 
   @Output() scroll: EventEmitter<any> = new EventEmitter();
 
@@ -42,7 +41,7 @@ export class ScrollerComponent implements OnInit, OnDestroy {
   prevScrollYPos = 0;
   prevScrollXPos = 0;
   element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  parentElement: HTMLElement;
+  parentElement?: HTMLElement;
 
   private _scrollEventListener: any = null;
 
@@ -50,15 +49,15 @@ export class ScrollerComponent implements OnInit, OnDestroy {
     // manual bind so we don't always listen
     if (this.scrollbarV || this.scrollbarH) {
       const renderer = this.renderer;
-      this.parentElement = renderer.parentNode(renderer.parentNode(this.element));
+      this.parentElement = renderer.parentNode(this.element);
       this._scrollEventListener = this.onScrolled.bind(this);
-      this.parentElement.addEventListener('scroll', this._scrollEventListener);
+      this.parentElement?.addEventListener('scroll', this._scrollEventListener);
     }
   }
 
   ngOnDestroy(): void {
     if (this._scrollEventListener) {
-      this.parentElement.removeEventListener('scroll', this._scrollEventListener);
+      this.parentElement?.removeEventListener('scroll', this._scrollEventListener);
       this._scrollEventListener = null;
     }
   }
@@ -82,7 +81,7 @@ export class ScrollerComponent implements OnInit, OnDestroy {
     let direction: string;
     if (this.scrollYPos < this.prevScrollYPos) {
       direction = 'down';
-    } else if (this.scrollYPos > this.prevScrollYPos) {
+    } else {
       direction = 'up';
     }
 

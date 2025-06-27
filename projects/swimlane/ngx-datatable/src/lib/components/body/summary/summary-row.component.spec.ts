@@ -4,9 +4,10 @@ import { By } from '@angular/platform-browser';
 
 import { DataTableBodyRowComponent } from '../body-row.component';
 import { DataTableBodyCellComponent } from '../body-cell.component';
-import { DataTableSummaryRowComponent, ISummaryColumn } from './summary-row.component';
+import { DataTableSummaryRowComponent } from './summary-row.component';
 import { ScrollbarHelper } from '../../../services/scrollbar-helper.service';
-import { setColumnDefaults } from '../../../utils/column-helper';
+import { toInternalColumn } from '../../../utils/column-helper';
+import { TableColumnInternal } from '../../../types/internal.types';
 
 describe('DataTableSummaryRowComponent', () => {
   let fixture: ComponentFixture<DataTableSummaryRowComponent>;
@@ -14,15 +15,14 @@ describe('DataTableSummaryRowComponent', () => {
   let element: DebugElement;
 
   let rows: any[];
-  let columns: ISummaryColumn[];
+  let columns: TableColumnInternal[];
 
   beforeEach(() => {
     rows = [
       { col1: 10, col2: 20 },
       { col1: 1, col2: 30 }
     ];
-    columns = [{ prop: 'col1' }, { prop: 'col2' }];
-    setColumnDefaults(columns);
+    columns = toInternalColumn([{ prop: 'col1' }, { prop: 'col2' }]);
   });
 
   beforeEach(waitForAsync(() => {
@@ -56,6 +56,7 @@ describe('DataTableSummaryRowComponent', () => {
 
   describe('Visibility', () => {
     it('should not be visible when there are no columns', () => {
+      component.columns = [];
       component.rows = rows;
       triggerChange();
       expect(element.query(By.css('datatable-body-row'))).toBeNull();
@@ -63,6 +64,7 @@ describe('DataTableSummaryRowComponent', () => {
 
     it('should not be visible when there are no rows', () => {
       component.columns = columns;
+      component.rows = [];
       triggerChange();
       expect(element.query(By.css('datatable-body-row'))).toBeNull();
     });
@@ -114,7 +116,7 @@ describe('DataTableSummaryRowComponent', () => {
 
       triggerChange();
 
-      expect(component.summaryRow.col1).toEqual(null);
+      expect(component.summaryRow.col1).toEqual(undefined);
     });
 
     it('should use provided summary function', () => {

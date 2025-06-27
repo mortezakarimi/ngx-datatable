@@ -1,6 +1,12 @@
-import { Component } from '@angular/core';
-import { ColumnMode, SortType, TableColumn } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DatatableComponent,
+  SortType,
+  TableColumn
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'client-sorting-demo',
@@ -31,7 +37,7 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent]
 })
 export class ClientSortingComponent {
   rows: Employee[] = [];
@@ -41,21 +47,11 @@ export class ClientSortingComponent {
   ColumnMode = ColumnMode;
   SortType = SortType;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data;
     });
-  }
-
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      const data = JSON.parse(req.response);
-      cb(data);
-    };
-
-    req.send();
   }
 }

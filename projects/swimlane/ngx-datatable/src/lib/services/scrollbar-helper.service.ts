@@ -1,5 +1,4 @@
-import { inject, Injectable } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, inject, Injectable } from '@angular/core';
 
 /**
  * Gets the width of the scrollbar.  Nesc for windows
@@ -25,7 +24,7 @@ export class ScrollbarHelper {
     outer.appendChild(inner);
 
     const widthWithScroll = inner.offsetWidth;
-    outer.parentNode.removeChild(outer);
+    this.document.body.removeChild(outer);
 
     return widthNoScroll - widthWithScroll;
   }

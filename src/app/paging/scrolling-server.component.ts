@@ -3,12 +3,12 @@ import { Observable, of } from 'rxjs';
 import { delay, map } from 'rxjs/operators';
 
 import data from 'src/assets/data/company.json';
-import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { ColumnMode, DatatableComponent } from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
 
 const companyData = data as any[];
 
-class PagedData<T> {
+interface PagedData<T> {
   data: T[];
 }
 
@@ -56,7 +56,7 @@ export class MockServerResultsService {
     </div>
   `,
   styleUrls: ['./scrolling-server.component.css'],
-  standalone: false
+  imports: [DatatableComponent]
 })
 export class ServerScrollingComponent {
   readonly headerHeight = 50;
@@ -64,7 +64,7 @@ export class ServerScrollingComponent {
   readonly pageLimit = 10;
 
   rows: Employee[] = [];
-  isLoading: boolean;
+  isLoading?: boolean;
 
   ColumnMode = ColumnMode;
 

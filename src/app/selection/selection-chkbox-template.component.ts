@@ -1,6 +1,16 @@
-import { Component } from '@angular/core';
-import { ColumnMode, SelectionType } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ActivateEvent,
+  ColumnMode,
+  DataTableColumnCellDirective,
+  DataTableColumnDirective,
+  DataTableColumnHeaderDirective,
+  DatatableComponent,
+  SelectEvent,
+  SelectionType
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'chkbox-selection-template-demo',
@@ -68,21 +78,26 @@ import { Employee } from '../data.model';
 
       <div class="selected-column">
         <h4>
-          Selections <small>({{ selected?.length }})</small>
+          Selections <small>({{ selected.length }})</small>
         </h4>
         <ul>
           @for (sel of selected; track sel) {
           <li>
             {{ sel.name }}
           </li>
-          } @if (!selected?.length) {
+          } @if (!selected.length) {
           <li>No Selections</li>
           }
         </ul>
       </div>
     </div>
   `,
-  standalone: false
+  imports: [
+    DatatableComponent,
+    DataTableColumnDirective,
+    DataTableColumnHeaderDirective,
+    DataTableColumnCellDirective
+  ]
 })
 export class CustomCheckboxSelectionComponent {
   rows: Employee[] = [];
@@ -91,31 +106,22 @@ export class CustomCheckboxSelectionComponent {
   ColumnMode = ColumnMode;
   SelectionType = SelectionType;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data;
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
-  }
-
-  onSelect({ selected }) {
+  onSelect({ selected }: SelectEvent<Employee>) {
     console.log('Select Event', selected, this.selected);
 
     this.selected.splice(0, this.selected.length);
     this.selected.push(...selected);
   }
 
-  onActivate(event) {
+  onActivate(event: ActivateEvent<Employee>) {
     console.log('Activate Event', event);
   }
 

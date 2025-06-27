@@ -1,6 +1,11 @@
-import { Component } from '@angular/core';
-import { ColumnMode, TableColumn } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DatatableComponent,
+  TableColumn
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'comparator-sorting-demo',
@@ -29,7 +34,7 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent]
 })
 export class SortingComparatorComponent {
   rows: Employee[] = [];
@@ -42,25 +47,15 @@ export class SortingComparatorComponent {
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
-      this.rows = data;
+    this.dataService.load('company.json').subscribe(data => {
+      this.rows = data.splice(0, 20);
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      const data = JSON.parse(req.response);
-      cb(data.splice(0, 20));
-    };
-
-    req.send();
-  }
-
-  companyComparator(propA, propB) {
+  companyComparator(propA: string, propB: string) {
     console.log('Sorting Comparator', propA, propB);
 
     // Just a simple sort function comparisoins
@@ -70,5 +65,7 @@ export class SortingComparatorComponent {
     if (propA.toLowerCase() > propB.toLowerCase()) {
       return 1;
     }
+
+    return 0;
   }
 }

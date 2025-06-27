@@ -1,6 +1,13 @@
-import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Component } from '@angular/core';
-import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { CdkDrag, CdkDragDrop, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DatatableComponent,
+  DatatableRowDefComponent,
+  DatatableRowDefDirective
+} from 'projects/swimlane/ngx-datatable/src/public-api';
+import { DataService } from '../data.service';
+import { Employee } from '../data.model';
 
 @Component({
   selector: 'drag-drop-demo',
@@ -36,10 +43,16 @@ import { ColumnMode } from 'projects/swimlane/ngx-datatable/src/public-api';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [
+    DatatableComponent,
+    CdkDropList,
+    DatatableRowDefDirective,
+    DatatableRowDefComponent,
+    CdkDrag
+  ]
 })
 export class DragDropComponent {
-  rows = [];
+  rows: Employee[] = [];
   loadingIndicator = true;
   reorderable = true;
 
@@ -51,24 +64,15 @@ export class DragDropComponent {
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
+    this.dataService.load('company.json').subscribe(data => {
       this.rows = data;
       setTimeout(() => {
         this.loadingIndicator = false;
       }, 1500);
     });
-  }
-
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      cb(JSON.parse(req.response));
-    };
-
-    req.send();
   }
 
   drop(event: CdkDragDrop<any>) {

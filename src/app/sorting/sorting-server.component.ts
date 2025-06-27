@@ -1,6 +1,12 @@
-import { Component } from '@angular/core';
-import { ColumnMode, TableColumn } from 'projects/swimlane/ngx-datatable/src/public-api';
+import { Component, inject } from '@angular/core';
+import {
+  ColumnMode,
+  DatatableComponent,
+  SortEvent,
+  TableColumn
+} from 'projects/swimlane/ngx-datatable/src/public-api';
 import { Employee } from '../data.model';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'server-sorting-demo',
@@ -32,7 +38,7 @@ import { Employee } from '../data.model';
       </ngx-datatable>
     </div>
   `,
-  standalone: false
+  imports: [DatatableComponent]
 })
 export class ServerSortingComponent {
   loading = false;
@@ -47,25 +53,15 @@ export class ServerSortingComponent {
 
   ColumnMode = ColumnMode;
 
+  private dataService = inject(DataService);
+
   constructor() {
-    this.fetch(data => {
-      this.rows = data;
+    this.dataService.load('company.json').subscribe(data => {
+      this.rows = data.splice(0, 20);
     });
   }
 
-  fetch(cb) {
-    const req = new XMLHttpRequest();
-    req.open('GET', `assets/data/company.json`);
-
-    req.onload = () => {
-      const data = JSON.parse(req.response);
-      cb(data.splice(0, 20));
-    };
-
-    req.send();
-  }
-
-  onSort(event) {
+  onSort(event: SortEvent) {
     // event was triggered, start sort sequence
     console.log('Sort Event', event);
     this.loading = true;
@@ -76,8 +72,11 @@ export class ServerSortingComponent {
       // your server would return the result for
       // you and you would just set the rows prop
       const sort = event.sorts[0];
+      type sortProp = 'company' | 'name' | 'gender';
       rows.sort(
-        (a, b) => a[sort.prop].localeCompare(b[sort.prop]) * (sort.dir === 'desc' ? -1 : 1)
+        (a, b) =>
+          a[sort.prop as sortProp].localeCompare(b[sort.prop as sortProp]) *
+          (sort.dir === 'desc' ? -1 : 1)
       );
 
       this.rows = rows;

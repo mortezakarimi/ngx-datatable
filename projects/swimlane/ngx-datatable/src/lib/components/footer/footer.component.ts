@@ -11,9 +11,9 @@ import { NgClass, NgTemplateOutlet } from '@angular/common';
       [ngClass]="{ 'selected-count': selectedMessage }"
       [style.height.px]="footerHeight"
     >
-      @if (footerTemplate) {
+      @if (footerTemplate?.template) {
       <ng-template
-        [ngTemplateOutlet]="footerTemplate.template"
+        [ngTemplateOutlet]="footerTemplate!.template!"
         [ngTemplateOutletContext]="{
           rowCount: rowCount,
           pageSize: pageSize,
@@ -30,6 +30,7 @@ import { NgClass, NgTemplateOutlet } from '@angular/common';
         }
         {{ rowCount?.toLocaleString() }} {{ totalMessage }}
       </div>
+      @if (isVisible) {
       <datatable-pager
         [pagerLeftArrowIcon]="pagerLeftArrowIcon"
         [pagerRightArrowIcon]="pagerRightArrowIcon"
@@ -38,33 +39,33 @@ import { NgClass, NgTemplateOutlet } from '@angular/common';
         [page]="curPage"
         [size]="pageSize"
         [count]="rowCount"
-        [hidden]="!isVisible"
         (change)="page.emit($event)"
       >
       </datatable-pager>
-      }
+      } }
     </div>
   `,
   host: {
     class: 'datatable-footer'
   },
+  styleUrl: './footer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgClass, NgTemplateOutlet, DataTablePagerComponent]
 })
 export class DataTableFooterComponent {
-  @Input() footerHeight: number;
-  @Input() rowCount: number;
-  @Input() pageSize: number;
-  @Input() offset: number;
-  @Input() pagerLeftArrowIcon: string;
-  @Input() pagerRightArrowIcon: string;
-  @Input() pagerPreviousIcon: string;
-  @Input() pagerNextIcon: string;
-  @Input() totalMessage: string;
-  @Input() footerTemplate: DatatableFooterDirective;
+  @Input() footerHeight!: number;
+  @Input() rowCount!: number;
+  @Input() pageSize!: number;
+  @Input() offset!: number;
+  @Input() pagerLeftArrowIcon?: string;
+  @Input() pagerRightArrowIcon?: string;
+  @Input() pagerPreviousIcon?: string;
+  @Input() pagerNextIcon?: string;
+  @Input() totalMessage!: string;
+  @Input() footerTemplate?: DatatableFooterDirective;
 
-  @Input() selectedCount: number = 0;
-  @Input() selectedMessage: string | boolean;
+  @Input() selectedCount = 0;
+  @Input() selectedMessage?: string | boolean;
 
   @Output() page: EventEmitter<PagerPageEvent> = new EventEmitter();
 

@@ -18,22 +18,25 @@ import {
 
 import { columnGroupWidths, columnsByPin, columnsByPinArr } from '../../utils/column';
 import { Keys } from '../../utils/keys';
-import { BehaviorSubject } from 'rxjs';
-import { ActivateEvent, RowOrGroup, TreeStatus } from '../../types/public.types';
-import { AsyncPipe } from '@angular/common';
-import { TableColumn } from '../../types/table-column.type';
-import { ColumnGroupWidth, PinnedColumns } from '../../types/internal.types';
+import { ActivateEvent, Row, RowOrGroup, TreeStatus } from '../../types/public.types';
+import {
+  CellActiveEvent,
+  ColumnGroupWidth,
+  PinnedColumns,
+  RowIndex,
+  TableColumnInternal
+} from '../../types/internal.types';
 import { DataTableBodyCellComponent } from './body-cell.component';
 
 @Component({
   selector: 'datatable-body-row',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @for (colGroup of _columnsByPin; track colGroup.type; let i = $index) {
+    @for (colGroup of _columnsByPin; track colGroup.type) { @if (colGroup.columns.length) {
     <div
       class="datatable-row-{{ colGroup.type }} datatable-row-group"
       [style.width.px]="_columnGroupWidths[colGroup.type]"
-      [class.row-disabled]="disable$ ? (disable$ | async) : false"
+      [class.row-disabled]="disabled"
     >
       @for (column of colGroup.columns; track column.$$id; let ii = $index) {
       <datatable-body-cell
@@ -47,28 +50,28 @@ import { DataTableBodyCellComponent } from './body-cell.component';
         [column]="column"
         [rowHeight]="rowHeight"
         [displayCheck]="displayCheck"
-        [disable$]="disable$"
+        [disabled]="disabled"
         [treeStatus]="treeStatus"
-        [ghostLoadingIndicator]="ghostLoadingIndicator"
         (activate)="onActivate($event, ii)"
         (treeAction)="onTreeAction()"
       >
       </datatable-body-cell>
       }
     </div>
-    }
+    } }
   `,
-  imports: [DataTableBodyCellComponent, AsyncPipe]
+  styleUrl: './body-row.component.scss',
+  imports: [DataTableBodyCellComponent]
 })
-export class DataTableBodyRowComponent<TRow = any> implements DoCheck, OnChanges {
+export class DataTableBodyRowComponent<TRow extends Row = any> implements DoCheck, OnChanges {
   private cd = inject(ChangeDetectorRef);
 
-  @Input() set columns(val: TableColumn[]) {
+  @Input() set columns(val: TableColumnInternal[]) {
     this._columns = val;
     this.recalculateColumns(val);
   }
 
-  get columns(): TableColumn[] {
+  get columns(): TableColumnInternal[] {
     return this._columns;
   }
 
@@ -86,25 +89,17 @@ export class DataTableBodyRowComponent<TRow = any> implements DoCheck, OnChanges
     return this._innerWidth;
   }
 
-  @Input() expanded: boolean;
-  @Input() rowClass?: (row: RowOrGroup<TRow>) => string | Record<string, boolean>;
-  @Input() row: TRow;
-  @Input() group: TRow[];
-  @Input() isSelected: boolean;
-  @Input() rowIndex: number;
-  @Input() displayCheck: (row: TRow, column: TableColumn, value?: any) => boolean;
+  @Input() expanded?: boolean;
+  @Input() rowClass?: (row: TRow) => string | Record<string, boolean>;
+  @Input() row!: TRow;
+  @Input() group?: TRow[];
+  @Input() isSelected?: boolean;
+  @Input() rowIndex!: RowIndex;
+  @Input() displayCheck?: (row: TRow, column: TableColumnInternal, value?: any) => boolean;
   @Input() treeStatus?: TreeStatus = 'collapsed';
-  @Input() ghostLoadingIndicator = false;
   @Input() verticalScrollVisible = false;
 
-  @Input() disable$: BehaviorSubject<boolean>;
-  @Input()
-  set offsetX(val: number) {
-    this._offsetX = val;
-  }
-  get offsetX() {
-    return this._offsetX;
-  }
+  @Input() disabled?: boolean;
 
   @HostBinding('class')
   get cssClass() {
@@ -112,13 +107,13 @@ export class DataTableBodyRowComponent<TRow = any> implements DoCheck, OnChanges
     if (this.isSelected) {
       cls += ' active';
     }
-    if (this.rowIndex % 2 !== 0) {
+    if (this.innerRowIndex % 2 !== 0) {
       cls += ' datatable-row-odd';
     }
-    if (this.rowIndex % 2 === 0) {
+    if (this.innerRowIndex % 2 === 0) {
       cls += ' datatable-row-even';
     }
-    if (this.disable$ && this.disable$.value) {
+    if (this.disabled) {
       cls += ' row-disabled';
     }
 
@@ -141,7 +136,7 @@ export class DataTableBodyRowComponent<TRow = any> implements DoCheck, OnChanges
 
   @HostBinding('style.height.px')
   @Input()
-  rowHeight: number;
+  rowHeight!: number;
 
   @HostBinding('style.width.px')
   get columnsTotalWidths(): number {
@@ -152,11 +147,10 @@ export class DataTableBodyRowComponent<TRow = any> implements DoCheck, OnChanges
   @Output() treeAction: EventEmitter<any> = new EventEmitter();
 
   _element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  _columnGroupWidths: ColumnGroupWidth;
-  _columnsByPin: PinnedColumns[];
-  _offsetX: number;
-  _columns: TableColumn[];
-  _innerWidth: number;
+  _columnGroupWidths!: ColumnGroupWidth;
+  _columnsByPin!: PinnedColumns[];
+  _columns!: TableColumnInternal[];
+  _innerWidth!: number;
 
   private _rowDiffer: KeyValueDiffer<keyof RowOrGroup<TRow>, any> = inject(KeyValueDiffers)
     .find({})
@@ -174,10 +168,8 @@ export class DataTableBodyRowComponent<TRow = any> implements DoCheck, OnChanges
     }
   }
 
-  onActivate(event: ActivateEvent<TRow>, index: number): void {
-    event.cellIndex = index;
-    event.rowElement = this._element;
-    this.activate.emit(event);
+  onActivate(event: CellActiveEvent<TRow>, index: number): void {
+    this.activate.emit({ ...event, rowElement: this._element, cellIndex: index });
   }
 
   @HostListener('keydown', ['$event'])
@@ -217,7 +209,7 @@ export class DataTableBodyRowComponent<TRow = any> implements DoCheck, OnChanges
     });
   }
 
-  recalculateColumns(val: TableColumn<TRow>[] = this.columns): void {
+  recalculateColumns(val: TableColumnInternal<TRow>[] = this.columns): void {
     this._columns = val;
     const colsByPin = columnsByPin(this._columns);
     this._columnsByPin = columnsByPinArr(this._columns);
@@ -226,5 +218,10 @@ export class DataTableBodyRowComponent<TRow = any> implements DoCheck, OnChanges
 
   onTreeAction() {
     this.treeAction.emit();
+  }
+
+  /** Returns the row index, or if in a group, the index within a group. */
+  private get innerRowIndex(): number {
+    return this.rowIndex?.indexInGroup ?? this.rowIndex?.index ?? 0;
   }
 }
