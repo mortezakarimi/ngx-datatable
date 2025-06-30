@@ -2,6 +2,11 @@
 
 ## HEAD (unreleased)
 
+## 22.0.0-alpha.0
+
+- Enhancement: Added support for Angular 20
+- Breaking: Removed support for Angular 17 and earlier versions
+
 ## 21.1.0
 
 - Fix: Prevent browser page crash when user inputs large Arrays
