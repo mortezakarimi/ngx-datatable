@@ -2,6 +2,8 @@
 
 ## HEAD (unreleased)
 
+- Fix: Fixing scroller Issue in datatable when multiple columns are there in datatable
+
 ## 22.0.0
 
 - Enhancement: Added support for Angular 20
